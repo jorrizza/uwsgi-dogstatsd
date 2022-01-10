@@ -170,7 +170,10 @@ static int dogstatsd_send_metric(struct uwsgi_buffer *ub, struct uwsgi_stats_pus
   }
 
   if (sendto(sn->fd, ub->buf, ub->pos, 0, (struct sockaddr *) &sn->addr.sa_in, sn->addr_len) < 0) {
-    uwsgi_error("dogstatsd_send_metric()/sendto()");
+    if (errno != EAGAIN && errno != EWOULDBLOCK) {
+      /* There's no backoff implemented, so don't flood these errors */
+      uwsgi_error("dogstatsd_send_metric()/sendto()");
+    }
   }
 
   return 0;
